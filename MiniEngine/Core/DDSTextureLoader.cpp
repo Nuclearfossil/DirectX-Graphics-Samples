@@ -794,7 +794,6 @@ static HRESULT CreateD3DResources( _In_ ID3D12Device* d3dDevice,
                                    _In_ DXGI_FORMAT format,
                                    _In_ bool forceSRGB,
                                    _In_ bool isCubeMap,
-                                   _In_reads_opt_(mipCount*arraySize) D3D12_SUBRESOURCE_DATA* initData,
                                    _Outptr_opt_ ID3D12Resource** texture,
                                    _In_ D3D12_CPU_DESCRIPTOR_HANDLE textureView )
 {
@@ -819,8 +818,8 @@ static HRESULT CreateD3DResources( _In_ ID3D12Device* d3dDevice,
 	ResourceDesc.Alignment = 0;
 	ResourceDesc.Width = static_cast<UINT64>( width );
 	ResourceDesc.Height = static_cast<UINT>( height );
-	ResourceDesc.DepthOrArraySize = static_cast<UINT>( arraySize );
-	ResourceDesc.MipLevels = static_cast<UINT>( mipCount );
+	ResourceDesc.DepthOrArraySize = static_cast<UINT16>( arraySize );
+	ResourceDesc.MipLevels = static_cast<UINT16>( mipCount );
 	ResourceDesc.Format = format;
 	ResourceDesc.SampleDesc.Count = 1;
 	ResourceDesc.SampleDesc.Quality = 0;
@@ -835,7 +834,7 @@ static HRESULT CreateD3DResources( _In_ ID3D12Device* d3dDevice,
 
                 ID3D12Resource* tex = nullptr;
                 hr = d3dDevice->CreateCommittedResource( &HeapProps, D3D12_HEAP_FLAG_NONE, &ResourceDesc,
-					D3D12_RESOURCE_STATE_COMMON, nullptr, MY_IID_PPV_ARGS(&tex));
+					D3D12_RESOURCE_STATE_COPY_DEST, nullptr, MY_IID_PPV_ARGS(&tex));
 
                 if (SUCCEEDED( hr ) && tex != nullptr)
                 {
@@ -876,7 +875,7 @@ static HRESULT CreateD3DResources( _In_ ID3D12Device* d3dDevice,
 
                 ID3D12Resource* tex = nullptr;
                 hr = d3dDevice->CreateCommittedResource( &HeapProps, D3D12_HEAP_FLAG_NONE, &ResourceDesc,
-					D3D12_RESOURCE_STATE_COMMON, nullptr, MY_IID_PPV_ARGS(&tex));
+					D3D12_RESOURCE_STATE_COPY_DEST, nullptr, MY_IID_PPV_ARGS(&tex));
 
                 if (SUCCEEDED( hr ) && tex != 0)
                 {
@@ -931,11 +930,11 @@ static HRESULT CreateD3DResources( _In_ ID3D12Device* d3dDevice,
         case D3D12_RESOURCE_DIMENSION_TEXTURE3D:
             {
 				ResourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE3D;
-				ResourceDesc.DepthOrArraySize = static_cast<UINT>( depth );
+				ResourceDesc.DepthOrArraySize = static_cast<UINT16>( depth );
 
                 ID3D12Resource* tex = nullptr;
                 hr = d3dDevice->CreateCommittedResource( &HeapProps, D3D12_HEAP_FLAG_NONE, &ResourceDesc,
-					D3D12_RESOURCE_STATE_COMMON, nullptr, MY_IID_PPV_ARGS(&tex));
+					D3D12_RESOURCE_STATE_COPY_DEST, nullptr, MY_IID_PPV_ARGS(&tex));
 
                 if (SUCCEEDED( hr ) && tex != nullptr)
                 {
@@ -955,7 +954,7 @@ static HRESULT CreateD3DResources( _In_ ID3D12Device* d3dDevice,
                     }
                     else
                     {
-                        tex->SetName(L"DDSTextureLoader");
+                        tex->SetName(L"DDS Texture (3D)");
                         tex->Release();
                     }
                 }
@@ -1163,7 +1162,7 @@ static HRESULT CreateTextureFromDDS( _In_ ID3D12Device* d3dDevice,
         {
             hr = CreateD3DResources( d3dDevice, resDim, twidth, theight, tdepth, mipCount - skipMip, arraySize,
                                      format, forceSRGB,
-                                     isCubeMap, initData.get(), texture, textureView );
+                                     isCubeMap, texture, textureView );
 
             if ( FAILED(hr) && !maxsize && (mipCount > 1) )
             {
@@ -1178,14 +1177,14 @@ static HRESULT CreateTextureFromDDS( _In_ ID3D12Device* d3dDevice,
                 {
                     hr = CreateD3DResources( d3dDevice, resDim, twidth, theight, tdepth, mipCount - skipMip, arraySize,
                                              format, forceSRGB,
-                                             isCubeMap, initData.get(), texture, textureView );
+                                             isCubeMap, texture, textureView );
                 }
             }
         }
 
 		if (SUCCEEDED(hr))
 		{
-			GpuResource DestTexture(*texture, D3D12_RESOURCE_STATE_COMMON);
+			GpuResource DestTexture(*texture, D3D12_RESOURCE_STATE_COPY_DEST);
 			CommandContext::InitializeTexture(DestTexture, subresourceCount, initData.get());
 		}
 	}

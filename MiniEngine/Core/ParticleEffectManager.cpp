@@ -174,22 +174,22 @@ namespace
 		CompContext.Dispatch( 1, 1, 1 );
 	}
 
-	void MaintainTextureList(ParticleEffectProperties* effectProperties)
+	void MaintainTextureList(ParticleEffectProperties& effectProperties)
 	{
-		std::wstring name = effectProperties->TexturePath;
+		std::wstring name = effectProperties.TexturePath;
 
 		for (uint32_t i = 0; i < TextureNameArray.size(); i++)
 		{
 			if (name.compare(TextureNameArray[i]) == 0)
 			{
-				effectProperties->EmitProperties.TextureID = i;
+				effectProperties.EmitProperties.TextureID = i;
 				return;
 			}
 		}
 	
 		TextureNameArray.push_back(name);
 		UINT TextureID = (UINT)(TextureNameArray.size() - 1);
-		effectProperties->EmitProperties.TextureID = TextureID;
+		effectProperties.EmitProperties.TextureID = TextureID;
 
 		const ManagedTexture* managedTex = TextureManager::LoadDDSFromFile(name.c_str(), true);
 		managedTex->WaitForLoad();
@@ -451,7 +451,7 @@ void ParticleEffects::Initialize( uint32_t MaxDisplayWidth, uint32_t MaxDisplayH
 	RootSig[2].InitAsConstantBuffer(2);
 	RootSig[3].InitAsDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 0, 8);
 	RootSig[4].InitAsDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 0, 10);
-	RootSig.Finalize();
+	RootSig.Finalize(L"Particle Effects");
 
 #define CreatePSO( ObjName, ShaderByteCode ) \
 	ObjName.SetRootSignature(RootSig); \
@@ -554,9 +554,9 @@ void ParticleEffects::Initialize( uint32_t MaxDisplayWidth, uint32_t MaxDisplayH
 
 	ID3D12Resource* tex = nullptr;
 	ASSERT_SUCCEEDED( g_Device->CreateCommittedResource( &HeapProps, D3D12_HEAP_FLAG_NONE,
-		&TexDesc, D3D12_RESOURCE_STATE_COMMON, nullptr, MY_IID_PPV_ARGS(&tex)) );
-
-	TextureArray = GpuResource(tex, D3D12_RESOURCE_STATE_COMMON);
+		&TexDesc, D3D12_RESOURCE_STATE_COPY_DEST, nullptr, MY_IID_PPV_ARGS(&tex)) );
+	tex->SetName(L"Particle TexArray");
+	TextureArray = GpuResource(tex, D3D12_RESOURCE_STATE_COPY_DEST);
 	tex->Release();
 
 	D3D12_SHADER_RESOURCE_VIEW_DESC SRVDesc = {};
@@ -601,7 +601,7 @@ void ParticleEffects::Shutdown( void )
 }
 
 //Returns index into Pool
-EffectHandle ParticleEffects::PreLoadEffectResources( ParticleEffectProperties* effectProperties )
+EffectHandle ParticleEffects::PreLoadEffectResources( ParticleEffectProperties& effectProperties )
 {
 	if (!s_InitComplete)
 		return EFFECTS_ERROR;
@@ -640,7 +640,7 @@ EffectHandle ParticleEffects::InstantiateEffect( EffectHandle effectHandle )
 }
 
 //Returns index into Active
-EffectHandle ParticleEffects::InstantiateEffect( ParticleEffectProperties* effectProperties )
+EffectHandle ParticleEffects::InstantiateEffect( ParticleEffectProperties& effectProperties )
 {
 	if (!s_InitComplete)
 		return EFFECTS_ERROR;

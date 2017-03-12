@@ -86,7 +86,7 @@ void RootSignature::InitStaticSampler(
 	}
 }
 
-void RootSignature::Finalize(D3D12_ROOT_SIGNATURE_FLAGS Flags)
+void RootSignature::Finalize(const std::wstring& name, D3D12_ROOT_SIGNATURE_FLAGS Flags)
 {
 	if (m_Finalized)
 		return;
@@ -101,9 +101,11 @@ void RootSignature::Finalize(D3D12_ROOT_SIGNATURE_FLAGS Flags)
 	RootDesc.Flags = Flags;
 
 	m_DescriptorTableBitMap = 0;
-	m_MaxDescriptorCacheHandleCount = 0;
+	m_SamplerTableBitMap = 0;
 
-	size_t HashCode = Utility::HashState( RootDesc.pStaticSamplers, m_NumSamplers );
+	size_t HashCode = Utility::HashState(&RootDesc.Flags);
+	HashCode = Utility::HashState( RootDesc.pStaticSamplers, m_NumSamplers, HashCode );
+
 	for (UINT Param = 0; Param < m_NumParameters; ++Param)
 	{
 		const D3D12_ROOT_PARAMETER& RootParam = RootDesc.pParameters[Param];
@@ -116,15 +118,14 @@ void RootSignature::Finalize(D3D12_ROOT_SIGNATURE_FLAGS Flags)
 			HashCode = Utility::HashState( RootParam.DescriptorTable.pDescriptorRanges,
 				RootParam.DescriptorTable.NumDescriptorRanges, HashCode );
 
-			// We don't care about sampler descriptor tables.  We don't manage them in DescriptorCache
+			// We keep track of sampler descriptor tables separately from CBV_SRV_UAV descriptor tables
 			if (RootParam.DescriptorTable.pDescriptorRanges->RangeType == D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER)
-				continue;
+				m_SamplerTableBitMap |= (1 << Param);
+			else
+				m_DescriptorTableBitMap |= (1 << Param);
 
-			m_DescriptorTableBitMap |= (1 << Param);
 			for (UINT TableRange = 0; TableRange < RootParam.DescriptorTable.NumDescriptorRanges; ++TableRange)
 				m_DescriptorTableSize[Param] += RootParam.DescriptorTable.pDescriptorRanges[TableRange].NumDescriptors;
-
-			m_MaxDescriptorCacheHandleCount += m_DescriptorTableSize[Param];
 		}
 		else
 			HashCode = Utility::HashState( &RootParam, 1, HashCode );
@@ -156,6 +157,8 @@ void RootSignature::Finalize(D3D12_ROOT_SIGNATURE_FLAGS Flags)
 
 		ASSERT_SUCCEEDED( g_Device->CreateRootSignature(1, pOutBlob->GetBufferPointer(), pOutBlob->GetBufferSize(),
 			MY_IID_PPV_ARGS(&m_Signature)) );
+
+		m_Signature->SetName(name.c_str());
 
 		s_RootSignatureHashMap[HashCode].Attach(m_Signature);
 		ASSERT(*RSRef == m_Signature);

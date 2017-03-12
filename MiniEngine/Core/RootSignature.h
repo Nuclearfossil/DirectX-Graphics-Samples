@@ -158,7 +158,7 @@ public:
 	void InitStaticSampler( UINT Register, const D3D12_SAMPLER_DESC& NonStaticSamplerDesc,
 		D3D12_SHADER_VISIBILITY Visibility = D3D12_SHADER_VISIBILITY_ALL );
 
-	void Finalize(D3D12_ROOT_SIGNATURE_FLAGS Flags = D3D12_ROOT_SIGNATURE_FLAG_NONE);
+	void Finalize(const std::wstring& name, D3D12_ROOT_SIGNATURE_FLAGS Flags = D3D12_ROOT_SIGNATURE_FLAG_NONE);
 
 	ID3D12RootSignature* GetSignature() const { return m_Signature; }
 
@@ -168,9 +168,9 @@ protected:
 	UINT m_NumParameters;
 	UINT m_NumSamplers;
 	UINT m_NumInitializedStaticSamplers;
-	uint32_t m_DescriptorTableBitMap;		// One bit is set for root parameters that are (non-sampler) descriptor tables
+	uint32_t m_DescriptorTableBitMap;		// One bit is set for root parameters that are non-sampler descriptor tables
+	uint32_t m_SamplerTableBitMap;			// One bit is set for root parameters that are sampler descriptor tables
 	uint32_t m_DescriptorTableSize[16];		// Non-sampler descriptor tables need to know their descriptor count
-	UINT m_MaxDescriptorCacheHandleCount;	// The sum of all non-sampler descriptor table counts
 	std::unique_ptr<RootParameter[]> m_ParamArray;
 	std::unique_ptr<D3D12_STATIC_SAMPLER_DESC[]> m_SamplerArray;
 	ID3D12RootSignature* m_Signature;

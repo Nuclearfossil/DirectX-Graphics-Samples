@@ -240,7 +240,7 @@ public:
 
 	}
 
-	std::vector<std::unique_ptr<PerfGraph>> m_Graphs;
+	std::vector<std::unique_ptr<PerfGraph>> m_Graphs; // this should be private
 
 private:
 	
@@ -283,7 +283,7 @@ namespace
 //---------------------------------------------------------------------
 
 static void DrawGraphHeaders(TextContext& Text, float leftMargin, float topMargin, float offsetY, float graphHeight, float* MinArray, 
-	float* MaxArray, float* PresetMaxArray, bool GlobalScale,  uint32_t numDebugVar, std::string* graphTitles);
+	float* MaxArray, float* PresetMaxArray, bool GlobalScale,  uint32_t numDebugVar, std::string graphTitles[]);
 
 
 void GraphRenderer::Initialize( void )
@@ -293,7 +293,7 @@ void GraphRenderer::Initialize( void )
 	s_RootSignature[1].InitAsDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 0, 2);
 	s_RootSignature[2].InitAsBufferSRV(0, D3D12_SHADER_VISIBILITY_VERTEX);
 	s_RootSignature[3].InitAsConstants(1, 3);
-	s_RootSignature.Finalize();
+	s_RootSignature.Finalize(L"Graph Renderer");
 
 	s_RenderPerfGraphPSO.SetRootSignature(s_RootSignature);
 	s_RenderPerfGraphPSO.SetRasterizerState(RasterizerDefault);
@@ -363,7 +363,7 @@ Color GraphRenderer::GetGraphColor( GraphHandle GraphID, GraphType Type)
 		return GlobalGraphs.GetColor(GraphID);	
 }
 
-void GraphRenderer::Update( XMFLOAT2 InputNode, GraphHandle GraphID, bool IsGraphed, GraphType Type)
+void GraphRenderer::Update( XMFLOAT2 InputNode, GraphHandle GraphID, GraphType Type)
 {
 	if (GraphID == PERF_GRAPH_ERROR)
 		return;
@@ -388,10 +388,10 @@ void GraphRenderer::Update( XMFLOAT2 InputNode, GraphHandle GraphID, bool IsGrap
 }
 
 void DrawGraphHeaders(TextContext& Text, float leftMargin, float topMargin, float offsetY, float graphHeight, float* MinArray,
-	float* MaxArray, float* PresetMaxArray, bool GlobalScale, uint32_t numDebugVar, std::string* graphTitles)
+	float* MaxArray, float* PresetMaxArray, bool GlobalScale, uint32_t numDebugVar, std::string graphTitles[])
 {		
 	XMFLOAT2 textSpaceY = XMFLOAT2(0.02f * graphHeight, 0.067f * graphHeight); //top and bottom text space
-	textSpaceY.y = graphHeight - topMargin - textSpaceY.x * 3.0f;
+	textSpaceY.y = graphHeight - topMargin - textSpaceY.x * 3.0f; // make this better
 	float textSpaceX = 45.f;
 	Text.SetColor(Color(1.0f, 1.0f, 1.0f));
 	Text.SetTextSize(12.0f);
@@ -453,7 +453,6 @@ void GraphRenderer::RenderGraphs(GraphicsContext& Context, GraphType Type)
 		DrawGraphHeaders(Text, (viewport.TopLeftX),  blankSpace, 0.0f, (viewport.Height + blankSpace), ProfileGraphs.GetMin(), 
 			ProfileGraphs.GetMax(), ProfileGraphs.GetPresetMax(), false, PROFILE_DEBUG_VAR_COUNT, graphTitles);
 		
-		GraphicsContext& Context = Text.GetCommandContext();
 		Context.SetRootSignature(s_RootSignature);
 		Context.TransitionResource(g_OverlayBuffer, D3D12_RESOURCE_STATE_RENDER_TARGET);
 		Context.SetRenderTarget(g_OverlayBuffer.GetRTV());
@@ -486,10 +485,10 @@ void GraphRenderer::RenderGraphs(GraphicsContext& Context, GraphType Type)
 	
 		float blankSpace = viewport.Height / 8.0f;
 		XMFLOAT2 textSpace = XMFLOAT2(45.0f, 5.0f);
+		std::string graphTitles[] = { "CPU - GPU      " };
 		DrawGraphHeaders( Text, (viewport.TopLeftX), blankSpace,  (viewport.TopLeftY - blankSpace - textSpace.y), (viewport.Height + blankSpace), 
-										GlobalGraphs.GetMinAbs(), GlobalGraphs.GetMaxAbs(), GlobalGraphs.GetPresetMax(), true, 1, &(std::string("CPU - GPU      ")));
+										GlobalGraphs.GetMinAbs(), GlobalGraphs.GetMaxAbs(), GlobalGraphs.GetPresetMax(), true, 1, graphTitles);
 
-		GraphicsContext& Context = Text.GetCommandContext();
 		Context.SetRootSignature(s_RootSignature);
 		Context.TransitionResource(g_OverlayBuffer, D3D12_RESOURCE_STATE_RENDER_TARGET);
 		Context.SetRenderTarget(g_OverlayBuffer.GetRTV());

@@ -64,7 +64,7 @@ void FXAA::Initialize( void )
 	RootSig[0].InitAsConstants(0, 4);
 	RootSig[1].InitAsDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 0, 5);
 	RootSig[2].InitAsDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 0, 6);
-	RootSig.Finalize();
+	RootSig.Finalize(L"FXAA");
 
 #define CreatePSO( ObjName, ShaderByteCode ) \
 	ObjName.SetRootSignature(RootSig); \
@@ -112,7 +112,7 @@ void FXAA::Render( ComputeContext& Context, bool bUsePreComputedLuma )
 	Context.SetConstants(0, 1.0f / Target.GetWidth(), 1.0f / Target.GetHeight(), (float)ContrastThreshold, (float)SubpixelRemoval);
 
 	{
-		ScopedTimer _prof(L"Pass 1", Context);
+		ScopedTimer _prof2(L"Pass 1", Context);
 
 		// Begin by analysing the luminance buffer and setting aside high-contrast pixels in
 		// work queues to be processed later.  There are horizontal edge and vertical edge work
@@ -161,7 +161,7 @@ void FXAA::Render( ComputeContext& Context, bool bUsePreComputedLuma )
 	}
 
 	{
-		ScopedTimer _prof(L"Pass 2", Context);
+		ScopedTimer _prof2(L"Pass 2", Context);
 
 		// The next phase involves converting the work queues to DispatchIndirect parameters.
 		// The queues are also padded out to 64 elements to simplify the final consume logic.
